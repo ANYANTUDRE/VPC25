@@ -1,0 +1,55 @@
+lang: en
+
+root_dir: .
+save_intermediate: false
+save_output: false
+
+results_dir: ./results_en
+models_dir: ./parameters
+vectors_dir: ./results_en/original_speaker_embeddings
+
+force_compute_all: false
+
+pipeline: sttts
+
+modules:
+  asr:
+    recognizer: whisper
+    lang: en
+    force_compute_recognition: false
+    model_path: ./parameters/whisper-large-v3-turbo
+    utt_start_token: "~"
+    utt_end_token: "~#"
+    results_path: ./results_en/transcription/whisper-large-v3-turbo
+
+  speaker_embeddings:
+    anonymizer: ims
+    force_compute_extraction: false
+    force_compute_anonymization: false
+    vec_type: style-embed
+    emb_model_path: ./parameters/embedding_function.pt
+    emb_level: spk   # possible: spk, utt
+    anon_settings:   # possible: pool, random
+      method: gan
+      vectors_file: ./parameters/embedding_gan_generated_vectors.pt
+      gan_model_path: ./parameters/embedding_gan.pt
+      num_sampled: 5000
+      sim_threshold: 0.7
+    extraction_results_path: ./results_en/original_speaker_embeddings/style-embed_2.5_spk-level
+    anon_results_path: ./results_en/anon_speaker_embeddings/style-embed_2.5_spk-level
+
+  prosody:
+    extractor_type: ims
+    lang: en
+    aligner_model_path: ./parameters/aligner.pt
+    extraction_results_path: ./results_en/original_prosody/ims_extractor
+
+  tts:
+    synthesizer: ims
+    lang: en
+    force_compute_synthesis: false
+    fastspeech_path: ./parameters/ToucanTTS_Meta.pt
+    hifigan_path: ./parameters/Avocodo.pt
+    embeddings_path: ./parameters/embedding_function.pt
+    output_sr: 16000
+    results_path: ./results_en/anon_speech/ims_sttts_multi

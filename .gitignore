@@ -1,5 +1,7 @@
 # Virtual environment
 .venv/
+*.pt
+parameters/whisper-large-v3-turbo
 
 # Python bytecode and cache
 __pycache__/

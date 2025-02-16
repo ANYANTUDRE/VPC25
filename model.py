@@ -8,30 +8,45 @@
 # <!> *SAVE YOUR PARAMETERS IN THE parameters/ DICRECTORY* <!>
 ############################################################################
 
-def anonymize(input_audio_path): # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
-    """
-    anonymization algorithm
+from anonymization.pipelines.sttts_pipeline import STTTSPipeline
+import torch
+import yaml
+from pathlib import Path
+import soundfile as sf
+import numpy as np
 
-    Parameters
-    ----------
-    input_audio_path : str
-        path to the source audio file in one ".wav" format.
 
-    Returns
-    -------
-    audio : numpy.ndarray, shape (samples,), dtype=np.float32
-        The anonymized audio signal as a 1D NumPy array of type `np.float32`, 
-        which ensures compatibility with `soundfile.write()`.
-    sr : int
-        The sample rate of the processed audio.
-    """
+PIPELINES = {
+    'sttts': STTTSPipeline
+}
 
-    # Read the source audio file
 
-    # Apply your anonymization algorithm
-    
-    # Output:
-    audio = ...
-    sr = ...
+def anonymize(input_audio_path):
+    config_path = Path("./parameters/anon_ims_sttts_pc_whisper.yaml")
+    if config_path.exists():
+        with open(config_path, "r") as config_file:
+            config = yaml.safe_load(config_file)
+    else:
+        raise FileNotFoundError(f"Config file not found at {config_path}")
+
+    devices = [torch.device("cuda:0")] if torch.cuda.is_available() else [torch.device("cpu")]
+
+    with torch.no_grad():
+        pipeline = PIPELINES[config['pipeline']](
+            config=config, 
+            force_compute=True, 
+            devices=devices, 
+            config_name="anon_ims_sttts_pc_whisper"
+        )
+
+        anonymized_audio_path = pipeline.run_single_audio(input_audio_path)
+        
+        # Read the generated audio file
+        audio, sr = sf.read(anonymized_audio_path)
+        
+        # Convert to mono and ensure float32
+        if len(audio.shape) > 1:
+            audio = np.mean(audio, axis=1)
+        audio = audio.astype(np.float32)
     
     return audio, sr
