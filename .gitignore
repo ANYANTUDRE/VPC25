@@ -2,6 +2,7 @@
 .venv/
 *.pt
 parameters/whisper-large-v3-turbo
+results_en
 
 # Python bytecode and cache
 __pycache__/
