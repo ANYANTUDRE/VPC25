@@ -1,8 +1,8 @@
 lang: en
 
 root_dir: .
-save_intermediate: false
-save_output: false
+save_intermediate: true
+save_output: true
 
 results_dir: ./results_en
 models_dir: ./parameters
