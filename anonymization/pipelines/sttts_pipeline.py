@@ -15,6 +15,37 @@ import typing
 from utils import setup_logger
 
 logger = setup_logger(__name__)
+import torchaudio
+import torch
+
+def preprocess_audio(audio_path: str, target_sample_rate: int = 16000, min_duration_sec: float = 3.0):
+    """Resample, convert to mono, and pad audio if needed."""
+    # Load audio
+    waveform, sample_rate = torchaudio.load(audio_path)
+
+    # Convert to mono if multiple channels
+    if waveform.shape[0] > 1:
+        waveform = torch.mean(waveform, dim=0, keepdim=True)
+
+    # Resample if needed
+    if sample_rate != target_sample_rate:
+        transform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=target_sample_rate)
+        waveform = transform(waveform)
+
+    # Calculate current duration
+    duration_sec = waveform.shape[1] / target_sample_rate
+
+    # Pad with silence if shorter than min_duration_sec
+    if duration_sec < min_duration_sec:
+        pad_length = int((min_duration_sec - duration_sec) * target_sample_rate)
+        silence = torch.zeros((waveform.shape[0], pad_length))
+        waveform = torch.cat([waveform, silence], dim=1)
+
+    # Overwrite the original file with single-channel audio
+    torchaudio.save(audio_path, waveform, target_sample_rate)
+    return audio_path
+
+
 
 class STTTSPipeline:
     def __init__(self, config: dict, force_compute: bool, devices: list, config_name: str):
@@ -109,7 +140,9 @@ class STTTSPipeline:
             str: Path to the anonymized output audio file.
         """
         logger.info("Processing single audio file: %s", audio_file)
+        
         audio_path = Path(audio_file)
+        audio_path = Path(preprocess_audio(str(audio_path)))
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file {audio_file} does not exist.")
 
